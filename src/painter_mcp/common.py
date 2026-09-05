@@ -57,14 +57,14 @@ def atomic_write(path: Path, content: str, private: bool = False):
                         capture_output=True,
                         text=True,
                         check=True,
-                        creationflags=subprocess.CREATE_NO_WINDOW,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                     )
                     sid = next(csv.reader([identity.stdout.strip()]))[1]
                     subprocess.run(
                         ["icacls", str(temp), "/inheritance:r", "/grant:r", f"*{sid}:(F)"],
                         capture_output=True,
                         check=True,
-                        creationflags=subprocess.CREATE_NO_WINDOW,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                     )
             stream.write(content)
         os.replace(temp, path)

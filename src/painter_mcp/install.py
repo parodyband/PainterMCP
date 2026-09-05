@@ -26,7 +26,7 @@ def default_python_root():
         import ctypes
 
         buffer = ctypes.create_unicode_buffer(32768)
-        result = ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buffer)
+        result = getattr(ctypes, "windll").shell32.SHGetFolderPathW(None, 5, None, 0, buffer)
         documents = Path(buffer.value) if result == 0 else Path.home() / "Documents"
         return documents / "Adobe" / "Adobe Substance 3D Painter" / "python"
     if platform.system() == "Darwin":
