@@ -1,0 +1,45 @@
+name: Licensed Painter acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      isolated_session:
+        description: 'I have prepared a disposable licensed Painter session with no open project'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: licensed-painter
+  cancel-in-progress: false
+
+jobs:
+  painter:
+    if: inputs.isolated_session && vars.ENABLE_LICENSED_PAINTER_TESTS == 'true'
+    environment: licensed-painter
+    runs-on: [self-hosted, Windows, X64, painter-licensed]
+    timeout-minutes: 15
+    steps:
+      # This job is never triggered by pull requests. The operator must check out/review trusted source.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          python-version: '3.13'
+      - run: uv sync --frozen --extra dev
+      - name: Run acceptance against the prepared application
+        env:
+          PAINTER_MCP_TEST_ISOLATED: '1'
+        run: uv run pytest tests/licensed --junitxml=test-results/licensed.xml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: licensed-painter-results
+          path: |
+            test-results/licensed.xml
+            .local/live-validation/*/report.json
+          if-no-files-found: warn

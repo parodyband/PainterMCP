@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "painter-mcp"
+version = "1.0.0"
+description = "An agent-oriented MCP bridge for Adobe Substance 3D Painter"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{name = "Painter MCP contributors"}]
+dependencies = ["mcp>=1.26,<2", "tomlkit>=0.13,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pytest-cov>=6,<8", "ruff>=0.12,<1", "mypy>=1.15,<2", "build>=1.2,<2"]
+
+[project.scripts]
+painter-mcp = "painter_mcp.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/painter_mcp"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"skills/painter-mcp/SKILL.md" = "painter_mcp/data/SKILL.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["painter: requires a licensed, isolated Painter instance"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src/painter_mcp"]
+check_untyped_defs = true
+ignore_missing_imports = true
