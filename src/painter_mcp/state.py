@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import time
 import uuid
 from collections import OrderedDict
@@ -118,12 +119,13 @@ class State:
                 raise Fault("PAGE_EXPIRED", "Page belongs to another query or has expired")
             items = entry["items"]
         else:
-            items = producer()
-            if len(dumps(items).encode()) > 4_000_000:
+            items = copy.deepcopy(producer())
+            encoded_size = len(dumps(items).encode())
+            if encoded_size > 4_000_000:
                 raise Fault("QUERY_TOO_LARGE", "Narrow the resource query or texture-set scope")
             while self.pages and (
                 len(self.pages) >= 16
-                or sum(x["size"] for x in self.pages.values()) + len(dumps(items)) > 8_000_000
+                or sum(x["size"] for x in self.pages.values()) + encoded_size > 8_000_000
             ):
                 self.pages.popitem(last=False)
             token = self.ref("page", uuid.uuid4().hex)
@@ -131,7 +133,7 @@ class State:
                 "key": key,
                 "items": items,
                 "created": self.clock(),
-                "size": len(dumps(items)),
+                "size": encoded_size,
             }
         if offset < 0 or offset > len(items):
             raise Fault("INVALID_CURSOR", "Page offset out of bounds")
@@ -151,7 +153,7 @@ class State:
             used += size
         end = offset + len(page)
         return {
-            "items": page,
+            "items": copy.deepcopy(page),
             "total": len(items),
             "offset": offset,
             "next_cursor": f"{token}/{end}" if end < len(items) else None,

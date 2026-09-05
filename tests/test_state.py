@@ -26,6 +26,16 @@ def test_byte_bounded_page_continuation(state):
     assert page["truncated"]
 
 
+def test_snapshot_cannot_be_mutated_through_returned_rows(state):
+    rows = [{"value": 1}, {"value": 2}]
+    page = state.paginate("q", lambda: rows, {"limit": 1})
+    rows[1]["value"] = 999
+    page["items"][0]["value"] = 999
+    second = state.paginate("q", lambda: [], {"cursor": page["next_cursor"]})
+    assert second["items"][0]["value"] == 2
+    assert next(iter(state.pages.values()))["items"][0]["value"] == 1
+
+
 def test_pages_invalidated_on_project_replacement(state):
     page = state.paginate("q", lambda: [1, 2], {"limit": 1})
     state.reset_project()

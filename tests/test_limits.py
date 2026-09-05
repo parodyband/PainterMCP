@@ -48,3 +48,18 @@ def test_post_observation_image_indices_after_sdk_image(engine):
     data = result["structuredContent"]["data"]
     assert data["observation_image_indices"] == [2]
     assert data["observation"]["data"]["image"]["image_index"] == 2
+
+
+def test_kept_results_enforce_utf8_bytes_not_character_count(engine):
+    from .conftest import execute
+
+    result = execute(engine, "painter_script", {"source": "painter.keep(chr(0x1F600) * 1100000)"})
+    assert result["structuredContent"]["data"]["error"]["code"] == "KEEP_LIMIT"
+
+
+def test_page_cache_enforces_utf8_byte_budget(state):
+    items = [chr(0x1F600) * 3000] * 100
+    for index in range(7):
+        state.paginate(str(index), lambda: items, {"limit": 1})
+    assert sum(page["size"] for page in state.pages.values()) <= 8_000_000
+    assert len(state.pages) == 6

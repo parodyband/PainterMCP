@@ -79,7 +79,11 @@ class SDK:
         self.check()
         encoded = dumps(value)
         kept = self.session["kept"]
-        if len(kept) >= 64 or sum(len(dumps(v)) for v in kept.values()) + len(encoded) > 4_000_000:
+        if (
+            len(kept) >= 64
+            or sum(len(dumps(v).encode()) for v in kept.values()) + len(encoded.encode())
+            > 4_000_000
+        ):
             raise Fault(
                 "KEEP_LIMIT", "Release retained results before keeping more (64 results / 4 MB)"
             )
@@ -381,5 +385,6 @@ class Engine:
             data["error"] = self.error(exc)
         finally:
             sdk.active = False
+            session["used"] = self.state.clock()
         data.update(stdout=output.text, stdout_truncated=output.truncated, sdk_calls=sdk.calls)
         return data, sdk.images, ok
