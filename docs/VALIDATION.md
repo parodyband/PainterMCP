@@ -39,6 +39,13 @@ texture preview was also inspected. The UDIM preview reported two tiles and
 explicitly returned only the first. These images and generated project/material
 files remain local test artifacts and are not shipped.
 
+The managed installer was also run against the local clients. Claude Code reported
+the stdio server connected. The Codex server entry was verified with its CLI using
+a temporary `-c features.context_management=false` override: the user's existing
+`features.context_management` table is incompatible with their installed Codex CLI
+0.147.0. Comparison with the installer backup confirmed that setting was unchanged.
+No unrelated client settings were modified. Restart the Codex app to load the server.
+
 ## Measured agent-loop cost
 
 The measured workload renames one layer eight times and observes it. The separate

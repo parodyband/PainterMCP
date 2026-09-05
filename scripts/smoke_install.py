@@ -2,7 +2,9 @@
 
 import json
 import os
+import shutil
 import subprocess
+import sys
 import tempfile
 import venv
 from pathlib import Path
@@ -14,7 +16,14 @@ def smoke():
     wheel = next(Path("dist").resolve().glob(f"painter_mcp-{__version__}-*.whl"))
     with tempfile.TemporaryDirectory(prefix="painter-mcp-install-test-") as temp:
         root = Path(temp)
-        venv.EnvBuilder(with_pip=True).create(root / "venv")
+        uv = shutil.which("uv")
+        if uv:
+            # Portable Python distributions may omit ensurepip; uv seeds pip explicitly.
+            subprocess.run(
+                [uv, "venv", "--seed", "--python", sys.executable, str(root / "venv")], check=True
+            )
+        else:
+            venv.EnvBuilder(with_pip=True).create(root / "venv")
         python = root / "venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         env = {**os.environ, "PAINTER_MCP_HOME": str(root / "runtime")}
         env.pop("PAINTER_MCP_CONNECTION", None)

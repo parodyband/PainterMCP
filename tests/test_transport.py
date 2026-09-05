@@ -1,3 +1,4 @@
+import http.client
 import json
 import threading
 import time
@@ -127,7 +128,7 @@ def test_connection_rejects_remote_host(tmp_path):
 
 def test_malformed_and_oversized_json(transport):
     server, _ = transport
-    for body in (b"null", b"{broken", b'{"x":NaN}', b" " * 1_048_577):
+    for body in (b"null", b"{broken", b'{"x":NaN}'):
         request = urllib.request.Request(
             f"http://127.0.0.1:{server.port}/submit",
             data=body,
@@ -136,3 +137,17 @@ def test_malformed_and_oversized_json(transport):
         with pytest.raises(urllib.error.HTTPError) as error:
             urllib.request.urlopen(request)
         assert error.value.code == 400
+    # Reject the declared size before a body is sent. Sending a huge body while the
+    # server rejects it can legitimately produce a platform-dependent TCP reset.
+    connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=2)
+    try:
+        connection.putrequest("POST", "/submit")
+        connection.putheader("Authorization", "Bearer " + server.token)
+        connection.putheader("Content-Length", "1048577")
+        connection.endheaders()
+        response = connection.getresponse()
+        assert response.status == 400
+        assert json.loads(response.read())["error"]["code"] == "INPUT_LIMIT"
+        assert not server.broker.records
+    finally:
+        connection.close()

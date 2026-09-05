@@ -2,7 +2,10 @@
 
 from types import SimpleNamespace
 
+import pytest
+
 from painter_mcp.adapter import PainterAdapter
+from painter_mcp.common import Fault
 
 
 def bare_adapter(state):
@@ -84,3 +87,19 @@ def test_uv_projection_does_not_query_3d_symmetry(state):
     adapter.object = lambda token: Fill()
     adapter.encode = lambda value: value
     assert adapter.invoke("layers.projection", {"node": "test"})["symmetry"] is None
+
+
+def test_cancelled_mesh_export_is_not_reported_as_completed_edit(state):
+    adapter = bare_adapter(state)
+    adapter.sp = SimpleNamespace(
+        export=SimpleNamespace(
+            export_mesh=lambda *args: SimpleNamespace(status="Cancelled", message="Cancelled"),
+            ExportStatus=SimpleNamespace(Success="Success"),
+        )
+    )
+    adapter.public = lambda path: path
+    adapter.encode = lambda result: {"status": result.status, "message": result.message}
+    with pytest.raises(Fault) as error:
+        adapter.invoke("export.mesh", {"path": "mesh.obj", "option": "BaseMesh"})
+    assert error.value.code == "EXPORT_INCOMPLETE"
+    assert error.value.details["partial_files_possible"]

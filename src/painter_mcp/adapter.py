@@ -922,11 +922,17 @@ class PainterAdapter:
                 )
             return info
         if name == "export.mesh":
-            return self.encode(
-                sp.export.export_mesh(
-                    a["path"], self.public("export.MeshExportOption." + a["option"])
-                )
+            result = sp.export.export_mesh(
+                a["path"], self.public("export.MeshExportOption." + a["option"])
             )
+            if result.status != sp.export.ExportStatus.Success:
+                raise Fault(
+                    "EXPORT_INCOMPLETE",
+                    "Mesh export did not finish successfully",
+                    export=self.encode(result),
+                    partial_files_possible=True,
+                )
+            return self.encode(result)
         if name == "api.inspect":
             target = self.public(a.get("path", ""), a.get("target"))
 
