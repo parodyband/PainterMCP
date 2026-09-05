@@ -27,6 +27,13 @@ protected by an environment review and isolated on an operator-managed runner.
 It is never triggered for pull requests. Do not give unreviewed PR code access to
 a licensed workstation or user project directory.
 
+Release updates trust this repository's publisher and the Python package index.
+HTTPS origin/redirect restrictions, manifests, size limits, hashes and safe archive
+handling protect preparation. Downloaded release scripts are not executed: a verified
+wheel is installed into a separate environment. Only a ready package can become
+pending, and selection changes on Painter startup. User-edited managed plugin files
+block staging/activation. See [update security and lifecycle](UPDATES.md).
+
 Report a security issue privately to the repository owner using GitHub's private
 vulnerability reporting when enabled. Do not include tokens, project files or
 application binaries in public issues. Minimal reproduction steps and redacted

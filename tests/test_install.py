@@ -3,6 +3,7 @@ from pathlib import Path
 
 import tomlkit
 
+from painter_mcp import __version__
 from painter_mcp.install import configure_client, install, managed_files, repair, uninstall
 
 
@@ -24,7 +25,7 @@ def test_install_repair_update_and_preserve_edits(tmp_path, monkeypatch):
     result = repair()
     assert not result["installed"]
     assert "# User customization" in missing.read_text(encoding="utf-8")
-    assert missing.with_name("adapter.py.incoming-1.0.0").exists()
+    assert missing.with_name(f"adapter.py.incoming-{__version__}").exists()
     result = repair(replace_edited=True)
     assert result["installed"]
     assert list(missing.parent.glob("adapter.py.painter-mcp-backup-*"))

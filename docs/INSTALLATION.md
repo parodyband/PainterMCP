@@ -85,7 +85,8 @@ The installer changes only the server entry named `painter`:
   `~/.claude/skills/painter-mcp/SKILL.md`.
 
 The command is the installation virtual environment's absolute Python executable,
-with `args = ["-m", "painter_mcp", "serve"]`. It works without a particular working
+with arguments pointing to `~/.painter-mcp/launch.py` and `serve`. That stable launcher
+selects the version activated by Painter's startup loader. It works without a particular working
 directory. The official configuration references are
 [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli),
 [Codex skills](https://learn.chatgpt.com/docs/build-skills),
@@ -114,16 +115,20 @@ the bearer token itself is never copied there. No credentials are committed.
 
 ## Managed updates
 
-Install the new source version or wheel into the same external virtual environment:
+Painter checks GitHub for stable releases once per day and offers installation.
+Use **Help → Check Painter MCP Updates…**, or:
 
 ```powershell
-& "$env:USERPROFILE\.painter-mcp\venv\Scripts\python.exe" -m pip install --upgrade .
 & "$env:USERPROFILE\.painter-mcp\venv\Scripts\painter-mcp.exe" update
 ```
 
-Then restart Painter and your MCP client. `update` synchronizes the installed
-package's files; it does not execute a remote “latest” updater or silently fetch
-unreviewed code. `doctor` warns if external and embedded package versions differ.
+The selected release is verified and staged in its own directory and Python
+environment. Restart Painter, then the MCP client to activate it. `update --check`
+only checks metadata; `update-status` reports pending/active versions, and `rollback`
+stages the previous version. See [update guarantees and recovery](UPDATES.md).
+
+For an explicit source/wheel upgrade, run the normal installer again. The older
+1.0.0 installation needs that one-time upgrade to obtain the new updater.
 
 Every managed file has a stored hash. Missing/unchanged files are updated. If any
 plugin file has user edits, the complete incoming plugin is staged as
@@ -133,8 +138,10 @@ the same preservation policy. Merge your changes, or explicitly use
 files. Unknown extra files are not deleted. Restart after the complete plugin
 update; do not load a mix of old/new modules into a running process.
 
-`painter-mcp repair` restores missing managed files and checks configuration using
-the same preservation rules. `painter-mcp uninstall` removes only unchanged managed
+`painter-mcp repair` restores missing managed files using
+the same preservation rules. Versioned plugin repairs use the cached verified wheel.
+Rerun the full installer to repair a broken client environment or stable launcher.
+`painter-mcp uninstall` removes only unchanged managed
 plugin/skill files and unchanged `painter` client entries. It preserves user edits,
 backups, application projects and the external venv. Stop/restart Painter to unload
 an installed plugin; deleting files cannot undo code already loaded into memory.

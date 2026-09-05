@@ -15,6 +15,7 @@ htmlcov/
 connection.json
 *.spp
 *.spp.lock
+*.spp.painter_lock
 .mcp.json
 *.log
 test-results/

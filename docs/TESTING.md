@@ -12,6 +12,7 @@ uv run python -m build
 uv run python scripts/package.py
 uv run python scripts/check_package.py
 uv run python scripts/smoke_install.py
+uv run python scripts/smoke_update.py
 ```
 
 The ordinary suite uses an explicit application test double to validate engine
@@ -73,19 +74,19 @@ before enabling this runner; do not run pull-request workflows on it.
 
 ## Releases
 
-The package version is `1.0.0` in `pyproject.toml`, `painter_mcp.__version__` and
+The package version is `1.1.0` in `pyproject.toml`, `painter_mcp.__version__` and
 the companion skill metadata. `check_package.py` checks consistency, artifact
 contents, installer manifest and checksums. It optionally checks an exact tag:
 
 ```sh
-uv run python scripts/check_package.py --tag v1.0.0
+uv run python scripts/check_package.py --tag v1.1.0
 ```
 
 For a future release, update those versions together, update the changelog,
 validate licensed compatibility when needed, then let CI pass on `main`.
 Only then create and push the matching `vVERSION` tag. The tag workflow rebuilds
 and retests, rejects mismatched tags, and publishes the wheel, source archive,
-portable installer archive and SHA256SUMS in a separate minimal-permission job.
+portable installer archive, release-manifest.json and SHA256SUMS in a separate minimal-permission job.
 It does not publish to PyPI. No tag or release is needed for development CI.
 
 The initial delivery deliberately creates **no release tag and no release assets**.

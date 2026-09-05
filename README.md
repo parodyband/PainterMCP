@@ -5,6 +5,10 @@ Eight default tools combine observation, batched actions, recovery and persisten
 scripting. Specialist schemas cover the public Painter API without filling every
 agent turn with dozens of tools.
 
+Painter checks for stable GitHub releases automatically and offers verified,
+side-by-side updates. Use **Help → Check Painter MCP Updates…** or `painter-mcp update`.
+Restart Painter and your AI client to activate a staged version. See [updates and rollback](docs/UPDATES.md).
+
 Requires Python 3.10+ outside Painter and a licensed Painter installation with
 Python plugins, PySide6 and the layerstack API. Development targets Painter 12.1.4.
 Painter is an interactive desktop application; the server does not bypass licensing.

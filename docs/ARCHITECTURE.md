@@ -135,3 +135,10 @@ and Qt scheduling reflect Painter's actual public execution model.
 | `plugin.py` | Application-thread startup, timer, events and shutdown |
 | `client.py`, `server.py` | Discovery, recovery rendering and official MCP stdio integration |
 | `install.py`, `cli.py` | Managed installation, client configuration, repair and diagnostics |
+| `updater.py`, `updater_ui.py`, `bootstrap.py` | GitHub release checks, verified side-by-side preparation, stable startup/client selection and rollback |
+
+The updater added in 1.1.0 follows Maya-MCP's daily check and install/later/release
+notification flow. Downloads and subprocess preparation run off the app thread;
+Qt owns menu actions and notifications. Stable launchers select one active package
+for Painter and the stdio client after restart. See [updates](UPDATES.md) for the
+manifest trust chain, compatibility rules, user-edit protection and recovery.

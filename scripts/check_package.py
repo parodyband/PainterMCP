@@ -22,11 +22,23 @@ def check(dist, tag=None):
     if tag is not None:
         assert tag == "v" + __version__, f"Tag {tag!r} does not match v{__version__}"
     sums = (dist / "SHA256SUMS").read_text().splitlines()
-    assert len(sums) == 3, "Expected wheel, sdist and installer zip"
+    assert len(sums) == 4, "Expected wheel, sdist, installer zip and release manifest"
     for line in sums:
         expected, name = line.split("  ", 1)
         assert Path(name).name == name
         assert hashlib.sha256((dist / name).read_bytes()).hexdigest() == expected, name
+    from painter_mcp.updater import verify_archive
+
+    release = json.loads((dist / "release-manifest.json").read_text())
+    assert release["version"] == __version__
+    verify_archive(
+        (dist / release["package"]["name"]).read_bytes(),
+        {
+            "version": __version__,
+            "asset": {"size": release["package"]["size"]},
+            "sha256": release["package"]["sha256"],
+        },
+    )
     with zipfile.ZipFile(dist / f"painter-mcp-{__version__}.zip") as archive:
         prefix = f"painter-mcp-{__version__}/"
         manifest = json.loads(archive.read(prefix + "manifest.json"))

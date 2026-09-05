@@ -43,7 +43,7 @@ def backup(path):
     return target
 
 
-def managed_files(files, manifest_path, replace_edited=False):
+def managed_files(files, manifest_path, replace_edited=False, version=__version__):
     manifest = (
         json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest_path.exists()
@@ -61,7 +61,7 @@ def managed_files(files, manifest_path, replace_edited=False):
     if conflicts and not replace_edited:
         staged = []
         for path, content in files.items():
-            incoming = path.with_name(path.name + f".incoming-{__version__}")
+            incoming = path.with_name(path.name + f".incoming-{version}")
             atomic_write(incoming, content)
             staged.append(str(incoming))
         return {
@@ -75,14 +75,16 @@ def managed_files(files, manifest_path, replace_edited=False):
             backup(path)
         atomic_write(path, content)
         old[str(path)] = sha(content)
-    atomic_write(manifest_path, dumps({"version": __version__, "files": old}))
+    atomic_write(manifest_path, dumps({"version": version, "files": old}))
     return {"installed": True, "files": len(files), "conflicts": []}
 
 
-def configure_client(client, user_home, python, manifest, replace_edited=False):
+def configure_client(client, user_home, python, manifest, replace_edited=False, launcher=None):
     import tomlkit
 
     command: dict = {"command": str(python), "args": ["-m", "painter_mcp", "serve"]}
+    if launcher is not None:
+        command["args"] = [str(launcher), "serve"]
     connection_override = os.environ.get("PAINTER_MCP_CONNECTION")
     runtime_home = os.environ.get("PAINTER_MCP_HOME")
     if connection_override:
@@ -130,6 +132,13 @@ def configure_client(client, user_home, python, manifest, replace_edited=False):
 
 
 def install(painter_python=None, clients=(), user_home=None, replace_edited=False):
+    from .updater import install_lock
+
+    with install_lock(home()):
+        return _install(painter_python, clients, user_home, replace_edited)
+
+
+def _install(painter_python=None, clients=(), user_home=None, replace_edited=False):
     root = Path(painter_python or default_python_root()).resolve()
     user_home = Path(user_home or Path.home()).resolve()
     package = Path(__file__).parent
@@ -139,14 +148,27 @@ def install(painter_python=None, clients=(), user_home=None, replace_edited=Fals
     }
     files[root / "startup/painter_mcp_startup.py"] = (
         '"""Managed Painter MCP startup entry point."""\n'
-        "from painter_mcp.plugin import close_plugin as close_plugin\n"
-        "from painter_mcp.plugin import start_plugin as start_plugin\n"
+        "import runpy\n"
+        f"_boot = runpy.run_path({str(home() / 'bootstrap.py')!r})\n"
+        "def start_plugin():\n    _boot['start_painter']()\n"
+        "def close_plugin():\n    _boot['stop_painter']()\n"
     )
     manifest_path = root / "painter-mcp-install.json"
     result = managed_files(files, manifest_path, replace_edited)
     result["painter_python"] = str(root)
     result["restart_required"] = True
     if not result["installed"]:
+        return result
+    boot_files = {
+        home() / "bootstrap.py": (package / "bootstrap.py").read_text(encoding="utf-8"),
+        home()
+        / "launch.py": "import runpy\nfrom pathlib import Path\nraise SystemExit(runpy.run_path(str(Path(__file__).with_name('bootstrap.py')))['launch_client']())\n",
+    }
+    result["bootstrap"] = managed_files(
+        boot_files, home() / "bootstrap-install.json", replace_edited
+    )
+    if not result["bootstrap"]["installed"]:
+        result["installed"] = False
         return result
     config_manifest_path = home() / "clients-install.json"
     config_manifest = (
@@ -158,7 +180,12 @@ def install(painter_python=None, clients=(), user_home=None, replace_edited=Fals
     result["skills"] = {}
     for client in clients:
         result["clients"][client] = configure_client(
-            client, user_home, Path(sys.executable), config_manifest, replace_edited
+            client,
+            user_home,
+            Path(sys.executable),
+            config_manifest,
+            replace_edited,
+            home() / "launch.py",
         )
         skill_root = user_home / (
             ".agents/skills/painter-mcp" if client == "codex" else ".claude/skills/painter-mcp"
@@ -190,15 +217,49 @@ def install(painter_python=None, clients=(), user_home=None, replace_edited=Fals
         ),
         private=True,
     )
+    # Explicit source/wheel installation selects that base package at the next restart.
+    for pointer in ("active-version.json", "pending-update.json", "activation-error.json"):
+        (home() / pointer).unlink(missing_ok=True)
     return result
 
 
 def repair(replace_edited=False):
+    from .updater import install_lock
+
+    with install_lock(home()):
+        return _repair(replace_edited)
+
+
+def _repair(replace_edited=False):
+    active = home() / "active-version.json"
+    if active.exists():
+        from . import bootstrap, updater
+
+        record = bootstrap.read(active)
+        if not record.get("baseline"):
+            directory = Path(record["directory"])
+            bootstrap.validate_record(home(), record, check_files=False)
+            wheel = next(Path(p) for p in record["files"] if p.endswith(".whl"))
+            if sha(wheel.read_bytes()) != record["files"][str(wheel)]:
+                raise Fault("UPDATE_INTEGRITY", "Cached wheel is damaged; restage the release")
+            contents = updater.archive_files(wheel.read_bytes())
+            files = {
+                directory / "modules" / n: data.decode("utf-8")
+                for n, data in contents.items()
+                if n.startswith("painter_mcp/")
+            }
+            manifest = directory / "repair-manifest.json"
+            atomic_write(manifest, dumps({"files": record["files"]}))
+            result = managed_files(files, manifest, replace_edited)
+            result["restart_required"] = True
+            return result
     path = home() / "installation.json"
     if not path.exists():
         raise Fault("NOT_INSTALLED", "Run painter-mcp install first")
     config = json.loads(path.read_text(encoding="utf-8"))
-    return install(config["painter_python"], config["clients"], config["user_home"], replace_edited)
+    return _install(
+        config["painter_python"], config["clients"], config["user_home"], replace_edited
+    )
 
 
 def remove_managed(manifest_path, root):
@@ -225,6 +286,13 @@ def remove_managed(manifest_path, root):
 
 
 def uninstall():
+    from .updater import install_lock
+
+    with install_lock(home()):
+        return _uninstall()
+
+
+def _uninstall():
     import tomlkit
 
     path = home() / "installation.json"
@@ -233,6 +301,9 @@ def uninstall():
     config = json.loads(path.read_text(encoding="utf-8"))
     root = Path(config["painter_python"])
     removed, preserved = remove_managed(root / "painter-mcp-install.json", root)
+    gone, kept = remove_managed(home() / "bootstrap-install.json", home())
+    removed += gone
+    preserved += kept
     client_manifest_path = home() / "clients-install.json"
     manifest = (
         json.loads(client_manifest_path.read_text(encoding="utf-8"))

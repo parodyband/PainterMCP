@@ -2,7 +2,7 @@
 name: painter-mcp
 description: Inspect and edit a live Adobe Substance 3D Painter project through Painter MCP, including layers, masks, materials, baking and texture export. Use for operating Painter, not ordinary development of the MCP repository.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Work efficiently in Painter
@@ -74,8 +74,11 @@ Only queued requests can be cancelled; baking cancellation is cooperative.
 
 Install this skill and client configuration with `painter-mcp install --clients
 codex claude` (choose installed clients). Codex uses `~/.agents/skills/painter-mcp`;
-Claude Code uses `~/.claude/skills/painter-mcp`. After upgrading the Python package,
-run `painter-mcp update` and restart Painter and the client. `repair` restores
+Claude Code uses `~/.claude/skills/painter-mcp`. `painter-mcp update --check` checks
+GitHub; `update` stages a verified stable release for the next Painter/client restart.
+Painter also checks daily and has Help → Check Painter MCP Updates. `update-status`
+reports pending activation, and `rollback` stages the previous version. Do not
+restart or close a user's project without authorization. `repair` restores
 missing managed files. Local edits are preserved with incoming files for review;
 `--replace-edited` explicitly backs up and replaces them. Use `painter-mcp doctor`
 for connection failures. Installation details are in the project's README.

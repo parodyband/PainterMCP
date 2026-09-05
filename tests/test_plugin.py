@@ -62,6 +62,9 @@ def qt(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "PySide6.QtCore", core)
     monkeypatch.setenv("PAINTER_MCP_CONNECTION", str(tmp_path / "connection.json"))
     import painter_mcp.adapter
+    import painter_mcp.updater_ui
+
+    monkeypatch.setattr(painter_mcp.updater_ui, "attach", lambda sp: None)
 
     class Adapter(FakeAdapter):
         def __init__(self, state):

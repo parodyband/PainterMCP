@@ -9,10 +9,11 @@ from . import __version__
 from .common import atomic_write, connection_path, dumps
 
 _runtime = None
+_updates = None
 
 
 def start_plugin():
-    global _runtime
+    global _runtime, _updates
     if _runtime is not None:
         return
     from PySide6.QtCore import QCoreApplication, QObject, QThread, QTimer, Slot
@@ -90,6 +91,12 @@ def start_plugin():
         adapter.sp.logging.info(
             f"Painter MCP {__version__} listening on loopback port {transport.port}"
         )
+        from .updater_ui import attach
+
+        try:
+            _updates = attach(adapter.sp)
+        except Exception as exc:
+            adapter.sp.logging.warning(f"Painter MCP update UI unavailable: {exc}")
     except BaseException:
         if dispatch:
             dispatch.timer.stop()
@@ -101,11 +108,14 @@ def start_plugin():
 
 
 def close_plugin():
-    global _runtime
+    global _runtime, _updates
     if _runtime is None:
         return
     adapter, transport, dispatch, path, runtime_id = _runtime
     _runtime = None
+    if _updates is not None:
+        _updates.close()
+        _updates = None
     dispatch.timer.stop()
     try:
         dispatch.parent().aboutToQuit.disconnect(close_plugin)

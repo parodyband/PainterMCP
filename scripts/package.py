@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 from painter_mcp import __version__
+from painter_mcp.updater import COMPATIBILITY
 
 
 def build_archive(dist):
@@ -36,8 +37,27 @@ def build_archive(dist):
             item.external_attr = (0o755 if name.endswith(".sh") else 0o644) << 16
             output.writestr(item, data)
     sums = []
+    release_manifest = {
+        "schema_version": 1,
+        "name": "painter-mcp",
+        "version": __version__,
+        "compatibility": COMPATIBILITY,
+        "package": {
+            "name": archive.name,
+            "size": archive.stat().st_size,
+            "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+        },
+    }
+    (dist / "release-manifest.json").write_text(
+        json.dumps(release_manifest, indent=2), encoding="utf-8"
+    )
     for path in sorted(dist.iterdir()):
-        if path.suffix in (".whl", ".gz", ".zip"):
+        if path.name in (
+            wheels[0].name,
+            f"painter_mcp-{__version__}.tar.gz",
+            archive.name,
+            "release-manifest.json",
+        ):
             sums.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
     (dist / "SHA256SUMS").write_text("\n".join(sums) + "\n", encoding="utf-8")
     return archive
