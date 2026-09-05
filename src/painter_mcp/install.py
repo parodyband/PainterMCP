@@ -26,7 +26,10 @@ def default_python_root():
         import ctypes
 
         buffer = ctypes.create_unicode_buffer(32768)
-        result = getattr(ctypes, "windll").shell32.SHGetFolderPathW(None, 5, None, 0, buffer)
+        windows_loader = getattr(ctypes, "windll", None)
+        if windows_loader is None:
+            raise OSError("Windows document-directory API is unavailable; use --painter-python")
+        result = windows_loader.shell32.SHGetFolderPathW(None, 5, None, 0, buffer)
         documents = Path(buffer.value) if result == 0 else Path.home() / "Documents"
         return documents / "Adobe" / "Adobe Substance 3D Painter" / "python"
     if platform.system() == "Darwin":
