@@ -22,7 +22,7 @@ def check(dist, tag=None):
     if tag is not None:
         assert tag == "v" + __version__, f"Tag {tag!r} does not match v{__version__}"
     sums = (dist / "SHA256SUMS").read_text().splitlines()
-    assert len(sums) == 4, "Expected wheel, sdist, installer zip and release manifest"
+    assert len(sums) == 5, "Expected wheel, sdist, installer zip, launcher and release manifest"
     for line in sums:
         expected, name = line.split("  ", 1)
         assert Path(name).name == name
@@ -48,6 +48,11 @@ def check(dist, tag=None):
         }
         for name, expected in manifest["files"].items():
             assert hashlib.sha256(archive.read(prefix + name)).hexdigest() == expected
+        assert (
+            archive.read(prefix + "Install-PainterMcp.cmd")
+            == (dist / "Install-PainterMcp.cmd").read_bytes()
+        )
+        assert b"__PAINTER_MCP_" not in archive.read(prefix + "Install-PainterMcp.cmd")
     wheel = next(dist.glob(f"painter_mcp-{__version__}-*.whl"))
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()

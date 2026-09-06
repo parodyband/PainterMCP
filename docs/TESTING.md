@@ -13,6 +13,7 @@ uv run python scripts/package.py
 uv run python scripts/check_package.py
 uv run python scripts/smoke_install.py
 uv run python scripts/smoke_update.py
+uv run python scripts/smoke_windows_installer.py  # Windows
 ```
 
 The ordinary suite uses an explicit application test double to validate engine
@@ -72,6 +73,13 @@ plugin, start an unauthorized license session, or upload SPPs/screenshots. It up
 only the JUnit and sanitized numerical acceptance report. Review trusted source
 before enabling this runner; do not run pull-request workflows on it.
 
+The Windows installer smoke test launches the actual CMD through `cmd.exe`, from
+paths containing spaces and ampersands. It tests package corruption before setup,
+real private-Python provisioning, both client configurations, launcher-only bootstrap,
+hash mismatch and traversal rejection. The release workflow requires this Windows
+job to pass against its built artifacts before publishing. After publication,
+`--remote` validates the real GitHub download path instead of a local ZIP fixture.
+
 ## Releases
 
 The package version is `1.1.0` in `pyproject.toml`, `painter_mcp.__version__` and
@@ -86,9 +94,8 @@ For a future release, update those versions together, update the changelog,
 validate licensed compatibility when needed, then let CI pass on `main`.
 Only then create and push the matching `vVERSION` tag. The tag workflow rebuilds
 and retests, rejects mismatched tags, and publishes the wheel, source archive,
-portable installer archive, release-manifest.json and SHA256SUMS in a separate minimal-permission job.
+portable installer archive, standalone Install-PainterMcp.cmd, release-manifest.json
+and SHA256SUMS in a separate minimal-permission job.
 It does not publish to PyPI. No tag or release is needed for development CI.
 
-The initial delivery deliberately creates **no release tag and no release assets**.
-Tag-driven publishing configuration is checked, while the actual publication
-step remains unexecuted until a maintainer chooses to release.
+Release tags are created only after the source and CI for that version are ready.

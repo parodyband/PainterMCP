@@ -2,6 +2,7 @@
 
 ## 1.1.0
 
+- Double-click Windows installer, verified ZIP-only bootstrap and automatic private Python provisioning.
 - Automatic daily stable-release checks and a Painter Help-menu update command.
 - Verified GitHub manifest, archive and wheel downloads with compatibility and extraction checks.
 - Separate versioned plugin/client environments; activation on Painter restart through stable launchers.

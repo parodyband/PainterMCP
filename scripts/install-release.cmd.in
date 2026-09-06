@@ -1,0 +1,22 @@
+@echo off
+setlocal
+title Painter MCP Installer
+echo.
+echo Painter MCP Installer
+echo ---------------------
+echo Installs for your Windows user. Administrator access is not required.
+echo.
+set "PAINTER_MCP_INSTALLER_LAUNCHER=%~f0"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "try { $env:PSModulePath = [IO.Path]::Combine($PSHOME,'Modules') + [IO.Path]::PathSeparator + $env:PSModulePath; $text = Get-Content -LiteralPath $env:PAINTER_MCP_INSTALLER_LAUNCHER -Raw; $marker = '# PAINTER_MCP_EMBEDDED_SETUP'; $offset = $text.LastIndexOf($marker, [StringComparison]::Ordinal); if ($offset -lt 0) { throw 'Installer launcher is damaged.' }; & ([ScriptBlock]::Create($text.Substring($offset + $marker.Length))); exit 0 } catch { Write-Host ('Installation failed: ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }"
+set "installer_exit=%ERRORLEVEL%"
+echo.
+if not "%installer_exit%"=="0" (
+    echo Fix the reported problem and run this installer again.
+) else (
+    echo Installation complete. Restart Painter and your AI client when ready.
+)
+if not defined PAINTER_MCP_INSTALLER_NO_PAUSE pause
+exit /b %installer_exit%
+
+# PAINTER_MCP_EMBEDDED_SETUP
+__PAINTER_MCP_SETUP_SOURCE__

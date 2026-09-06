@@ -5,11 +5,26 @@
 - Licensed Substance 3D Painter with public Python plugins and PySide6. Painter
   12.1.4 on Windows is the live-validated version. Other versions/platforms must
   check `painter_status` and `api.inspect`; hosted OS tests do not certify Painter.
-- A separate Python 3.10+ for the MCP stdio process. Do not install MCP dependencies
-  into Adobe's bundled interpreter.
+- A separate Python 3.10+ for the MCP stdio process. The double-click Windows installer
+  provisions a private runtime automatically if a suitable interpreter is unavailable.
+  Do not install MCP dependencies into Adobe's bundled interpreter.
 - Codex or Claude Code with local stdio MCP support. No Adobe cloud API key is needed.
 
 ## Windows setup
+
+Download `Install-PainterMcp.cmd` from the latest GitHub release and double-click it.
+The same launcher is included in the ZIP. It works both after extraction and when
+Windows Explorer extracts only that file from inside the ZIP. The latter path
+downloads the exact matching release and verifies it before starting setup.
+
+When no suitable 64-bit Python is found, setup downloads the official CPython
+3.13.15 NuGet runtime and checks its pinned SHA-256. It is installed privately under
+`~/.painter-mcp/runtimes/`, without modifying system Python, PATH, registry entries or
+file associations. The Python runtime is retained because the MCP venv depends on it.
+The [official Python Windows documentation](https://docs.python.org/3.13/using/windows.html#the-nuget-org-packages)
+describes this side-by-side distribution. Internet access is needed for downloads
+and Python dependencies. Windows may show its normal downloaded-script warning;
+the installer changes execution policy only for its own PowerShell process.
 
 From the repository:
 
@@ -24,10 +39,10 @@ dependencies, copies the dependency-free plugin into Painter's user Python
 directory, and configures the selected clients. It does not download Painter or
 change licensing, firewall rules or system environment variables.
 
-For a downloaded, extracted installer archive, run `./install.ps1` from its root.
+For a downloaded, extracted installer archive, double-click `Install-PainterMcp.cmd`.
 The archive contains a matching wheel, manifest, checksums, this documentation and
-the companion skill. No release is published until a maintainer pushes a version
-tag. Until then, install from the repository or locally built wheel.
+the companion skill. The console remains open after success or failure so the
+result can be read. Existing modified plugin and skill files remain protected.
 
 Start or restart Painter after installation:
 
@@ -147,6 +162,14 @@ backups, application projects and the external venv. Stop/restart Painter to unl
 an installed plugin; deleting files cannot undo code already loaded into memory.
 
 ## Diagnostics
+
+For unattended testing, set `PAINTER_MCP_INSTALLER_NO_PAUSE=1`. Optional overrides are
+`PAINTER_MCP_INSTALLER_ROOT` (venv), `PAINTER_MCP_INSTALLER_PAINTER_PYTHON`,
+`PAINTER_MCP_INSTALLER_USER_HOME`, and comma-separated `PAINTER_MCP_INSTALLER_CLIENTS`.
+`PAINTER_MCP_HOME` isolates all runtime state. A supplied offline/test ZIP requires
+both `PAINTER_MCP_INSTALLER_ARCHIVE` and `PAINTER_MCP_INSTALLER_SHA256`; the package's
+internal manifest is still verified. `PAINTER_MCP_INSTALLER_FORCE_PRIVATE_PYTHON=1`
+exercises prerequisite provisioning for a fresh installation even if Python is installed.
 
 | Report | Action |
 |---|---|

@@ -34,6 +34,13 @@ wheel is installed into a separate environment. Only a ready package can become
 pending, and selection changes on Painter startup. User-edited managed plugin files
 block staging/activation. See [update security and lifecycle](UPDATES.md).
 
+The standalone Windows installer has an embedded PowerShell bootstrap, restricts
+HTTPS download origins, checks release identity/digests and rejects unsafe ZIP paths
+before invoking downloaded setup code. Extracted packages are checked against their
+internal manifest. Its optional private CPython download uses a pinned SHA-256 for
+the official NuGet package. No application binaries or Python runtime binaries are
+committed to this repository; prerequisites are downloaded on demand.
+
 Report a security issue privately to the repository owner using GitHub's private
 vulnerability reporting when enabled. Do not include tokens, project files or
 application binaries in public issues. Minimal reproduction steps and redacted

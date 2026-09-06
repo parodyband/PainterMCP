@@ -17,6 +17,20 @@ Painter is an interactive desktop application; the server does not bypass licens
 bridge, protocol and installers on Windows, macOS and Linux. The licensed Windows
 acceptance suite exercised all 45 specialist operations; see [measured results](docs/VALIDATION.md).
 
+## Install on Windows
+
+Download [Install-PainterMcp.cmd](https://github.com/parodyband/PainterMCP/releases/latest/download/Install-PainterMcp.cmd)
+and double-click it. It downloads and verifies the release, installs a private Python
+runtime if needed, and configures Painter, Codex and Claude Code for your user.
+No administrator access or terminal commands are required.
+
+You can also download the ZIP from [Releases](https://github.com/parodyband/PainterMCP/releases/latest)
+and double-click `Install-PainterMcp.cmd` inside it. Both fully extracted packages
+and Windows Explorer's launcher-only extraction are supported.
+
+Restart Painter and your AI client when convenient. The installer does not close
+or save an open project. See [installation and troubleshooting](docs/INSTALLATION.md).
+
 ## Install from source
 
 ```powershell

@@ -16,8 +16,23 @@ def build_archive(dist):
     if len(wheels) != 1:
         raise ValueError("Build exactly one matching wheel with python -m build first")
     files = {wheels[0].name: wheels[0].read_bytes()}
-    for name in ("install.ps1", "install.sh"):
+    for name in ("install.ps1", "install.sh", "installer-common.ps1"):
         files[name] = (root / "scripts" / name).read_bytes()
+    setup = (
+        (root / "scripts/installer-common.ps1").read_text(encoding="utf-8")
+        + "\n"
+        + (root / "scripts/install-entry.ps1").read_text(encoding="utf-8")
+    )
+    launcher = (
+        (root / "scripts/install-release.cmd.in")
+        .read_text(encoding="utf-8")
+        .replace("__PAINTER_MCP_SETUP_SOURCE__", setup)
+        .replace("__PAINTER_MCP_VERSION__", __version__)
+    )
+    files["Install-PainterMcp.cmd"] = (
+        launcher.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8")
+    )
+    (dist / "Install-PainterMcp.cmd").write_bytes(files["Install-PainterMcp.cmd"])
     for name in ("README.md", "LICENSE"):
         files[name] = (root / name).read_bytes()
     for file in (root / "docs").glob("*.md"):
@@ -57,6 +72,7 @@ def build_archive(dist):
             f"painter_mcp-{__version__}.tar.gz",
             archive.name,
             "release-manifest.json",
+            "Install-PainterMcp.cmd",
         ):
             sums.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
     (dist / "SHA256SUMS").write_text("\n".join(sums) + "\n", encoding="utf-8")
